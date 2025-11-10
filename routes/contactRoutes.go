@@ -89,20 +89,26 @@ func ContactRoutes(app *fiber.App) {
 		return c.JSON(fiber.Map{"message": "contact updated"})
 	})
 
-	app.Delete("/contacts/:id", func(c *fiber.Ctx) error {
-		idParam := c.Params("id")
-		objID, err := primitive.ObjectIDFromHex(idParam)
-		if err != nil {
-			return c.Status(400).JSON(fiber.Map{"error": "invalid id"})
-		}
+app.Delete("/contacts/:id", func(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	fmt.Println("Deleting contact with ID:", idParam) // 👈 add this
+	objID, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid id"})
+	}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-		_, err = collection.DeleteOne(ctx, bson.M{"_id": objID})
-		if err != nil {
-			return c.Status(500).JSON(fiber.Map{"error": "failed to delete"})
-		}
-		return c.JSON(fiber.Map{"message": "contact deleted"})
-	})
+	result, err := collection.DeleteOne(ctx, bson.M{"_id": objID})
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "failed to delete"})
+	}
+	if result.DeletedCount == 0 {
+		return c.Status(404).JSON(fiber.Map{"error": "contact not found"})
+	}
+
+	return c.JSON(fiber.Map{"message": "contact deleted"})
+})
+
 }
